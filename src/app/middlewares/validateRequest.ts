@@ -8,8 +8,8 @@ const validateRequest = (schema: ZodObject) => async (req: Request, res: Respons
         })
         return next()
 
-    } catch (error) {
-        next(error)
+    } catch (err) {
+        next(err);
     }
 }
 
