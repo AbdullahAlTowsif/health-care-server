@@ -27,7 +27,7 @@ const createPatient = async(req: Request) => {
     return result;
 }
 
-const getAllFromDB = async ({page, limit, searchTerm}: {page: number, limit: number, searchTerm?:any}) =>{
+const getAllFromDB = async ({page, limit, searchTerm, sortBy, sortOrder}: {page: number, limit: number, searchTerm?:any, sortBy: any, sortOrder: any}) =>{
     const pageNumber = page || 1
     const limitNumber = limit || 10
     const skip = (pageNumber - 1) * limitNumber
@@ -39,6 +39,11 @@ const getAllFromDB = async ({page, limit, searchTerm}: {page: number, limit: num
                 contains: searchTerm,
                 mode: "insensitive"
             }
+        },
+        orderBy: sortBy && sortOrder ? {
+            [sortBy]: sortOrder
+        } : {
+            createdAt: "desc"
         }
     });
     return result;
