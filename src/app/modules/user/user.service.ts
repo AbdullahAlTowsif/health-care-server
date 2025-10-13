@@ -27,12 +27,19 @@ const createPatient = async(req: Request) => {
     return result;
 }
 
-const getAllFromDB = async ({page, limit}: {page: number, limit: number}) =>{
-    console.log(page, limit);
-    const skip = (page - 1) * limit
+const getAllFromDB = async ({page, limit, searchTerm}: {page: number, limit: number, searchTerm?:any}) =>{
+    const pageNumber = page || 1
+    const limitNumber = limit || 10
+    const skip = (pageNumber - 1) * limitNumber
     const result = await prisma.user.findMany({
         skip,
-        take: limit
+        take: limitNumber,
+        where: {
+            email: {
+                contains: searchTerm,
+                mode: "insensitive"
+            }
+        }
     });
     return result;
 }
