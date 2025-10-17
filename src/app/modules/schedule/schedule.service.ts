@@ -3,6 +3,7 @@ import { prisma } from "../../shared/prisma";
 
 const insertIntoDB = async (payload: any) => {
     const { startTime, endTime, startDate, endDate } = payload;
+    // console.log({startDate, endDate, startTime, endTime});
     const intervalTime = 30;
 
     const schedules = []
@@ -15,7 +16,7 @@ const insertIntoDB = async (payload: any) => {
         const startDateTime = new Date(
             addMinutes(
                 addHours(
-                    `${format(currentDate, "yyyy-mm-dd")}`,
+                    `${format(currentDate, "yyyy-MM-dd")}`,
                     Number(startTime.split(":")[0])
                 ), Number(startTime.split(":")[1])
             )
@@ -25,11 +26,12 @@ const insertIntoDB = async (payload: any) => {
         const endDateTime = new Date(
             addMinutes(
                 addHours(
-                    `${format(currentDate, "yyyy-mm-dd")}`,
+                    `${format(currentDate, "yyyy-MM-dd")}`,
                     Number(endTime.split(":")[0])
                 ), Number(endTime.split(":")[1])
             )
         )
+        // console.log({startDateTime, endDateTime});
 
         // ekhon diner shuru and shesh shomoy k 30 min interval e bhag kore feltesi
         while (startDateTime < endDateTime) {
@@ -40,6 +42,7 @@ const insertIntoDB = async (payload: any) => {
                 startDateTime: slotStartDateTime,
                 endDateTime: slotEndDateTime
             }
+            // console.log("scheduleData", scheduleData);
 
             const existingSchedule = await prisma.schedule.findFirst({
                 where: scheduleData
@@ -51,9 +54,12 @@ const insertIntoDB = async (payload: any) => {
                 });
                 schedules.push(result)
             }
+            slotStartDateTime.setMinutes(slotStartDateTime.getMinutes() + intervalTime);
         }
+
+        currentDate.setDate(currentDate.getDate() + 1)
     }
-    return payload;
+    return schedules;
 }
 
 
