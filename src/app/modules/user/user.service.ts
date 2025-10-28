@@ -198,10 +198,29 @@ const getMyProfile = async (user: IJWTPayload) => {
 
 };
 
+
+const changeProfileStatus = async (id: string, payload: { status: UserStatus }) => {
+    const userData = await prisma.user.findUniqueOrThrow({
+        where: {
+            id
+        }
+    })
+
+    const updateUserStatus = await prisma.user.update({
+        where: {
+            id
+        },
+        data: payload
+    })
+
+    return updateUserStatus;
+};
+
 export const UserService = {
     createPatient,
     getAllFromDB,
     createAdmin,
     createDoctor,
-    getMyProfile
+    getMyProfile,
+    changeProfileStatus
 }
