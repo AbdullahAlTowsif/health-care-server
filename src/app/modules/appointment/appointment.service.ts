@@ -1,4 +1,4 @@
-import { AppointmentStatus, Prisma, UserRole } from "@prisma/client";
+import { AppointmentStatus, PaymentStatus, Prisma, UserRole } from "@prisma/client";
 import { IOptions, paginationHelper } from "../../helper/paginationHelper";
 import { stripe } from "../../helper/stripe";
 import { prisma } from "../../shared/prisma";
@@ -89,7 +89,7 @@ const createAppointment = async (user: IJWTPayload, payload: { doctorId: string,
 
         console.log(session);
 
-        return {paymentUrl: session.url}
+        return { paymentUrl: session.url }
     })
 
 
@@ -166,8 +166,8 @@ const updateAppointmentStatus = async (appointmentId: string, status: Appointmen
         }
     });
 
-    if(user.role === UserRole.DOCTOR) {
-        if(!(user.email === appointmentData.doctor.email)) {
+    if (user.role === UserRole.DOCTOR) {
+        if (!(user.email === appointmentData.doctor.email)) {
             throw new ApiError(httpStatus.BAD_REQUEST, "This is not your appointment")
         }
     }
@@ -251,9 +251,62 @@ const getAllFromDB = async (
 };
 
 
+const cancelUnpaidAppointments = async () => {
+    const thirtyMinAgo = new Date(Date.now() - 30 * 60 * 1000);
+
+    const unpaidAppointments = await prisma.appointment.findMany({
+        where: {
+            createdAt: {
+                lte: thirtyMinAgo
+            },
+            paymentStatus: PaymentStatus.UNPAID
+        }
+    })
+
+    const appointmentIdsToCancel = unpaidAppointments.map(appointment => appointment.id);
+
+    await prisma.$transaction(async (tnx) => {
+        // payment delete
+        await tnx.payment.deleteMany({
+            where: {
+                appointmentId: {
+                    in: appointmentIdsToCancel
+                }
+            }
+        })
+
+        // appointment delete
+        await tnx.appointment.deleteMany({
+            where: {
+                id: {
+                    in: appointmentIdsToCancel
+                }
+            }
+        })
+
+        // doctorSchedule isBooked -----> false (change status)
+        for (const unPaidAppointment of unpaidAppointments) {
+            await tnx.doctorSchedules.update({
+                where: {
+                    doctorId_scheduleId: {
+                        doctorId: unPaidAppointment.doctorId,
+                        scheduleId: unPaidAppointment.scheduleId
+                    }
+                },
+                data: {
+                    isBooked: false
+                }
+            })
+        }
+    })
+
+}
+
+
 export const AppointmentService = {
     createAppointment,
     getMyAppointment,
     updateAppointmentStatus,
-    getAllFromDB
+    getAllFromDB,
+    cancelUnpaidAppointments
 };
