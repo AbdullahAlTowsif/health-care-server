@@ -14,6 +14,7 @@ router.get('/:id', DoctorController.getByIdFromDB);
 
 router.patch(
     "/:id",
+    auth(UserRole.ADMIN, UserRole.DOCTOR),
     DoctorController.updateIntoDB
 )
 
