@@ -5,7 +5,7 @@ import { fileUploader } from "../../helper/fileUploader";
 import { paginationHelper } from "../../helper/paginationHelper";
 import { Admin, Doctor, Prisma, UserRole, UserStatus } from "@prisma/client";
 import { userSearchableFields } from "./user.constant";
-import { object } from "zod";
+import config from "../../../config";
 import { IJWTPayload } from "../../types/common";
 
 const createPatient = async (req: Request) => {
@@ -66,32 +66,122 @@ const createAdmin = async (req: Request): Promise<Admin> => {
     return result;
 };
 
-const createDoctor = async (req: Request): Promise<Doctor> => {
+// const createDoctor = async (req: Request): Promise<Doctor> => {
 
+//     const file = req.file;
+
+//     if (file) {
+//         const uploadToCloudinary = await fileUploader.uploadToCloudinary(file);
+//         req.body.doctor.profilePhoto = uploadToCloudinary?.secure_url
+//     }
+//     const hashedPassword: string = await bcrypt.hash(req.body.password, 10)
+
+//     const userData = {
+//         email: req.body.doctor.email,
+//         password: hashedPassword,
+//         role: UserRole.DOCTOR
+//     }
+
+//     const result = await prisma.$transaction(async (transactionClient) => {
+//         await transactionClient.user.create({
+//             data: userData
+//         });
+
+//         const createdDoctorData = await transactionClient.doctor.create({
+//             data: req.body.doctor
+//         });
+
+//         return createdDoctorData;
+//     });
+
+//     return result;
+// };
+
+
+const createDoctor = async (req: Request): Promise<Doctor> => {
     const file = req.file;
 
     if (file) {
         const uploadToCloudinary = await fileUploader.uploadToCloudinary(file);
-        req.body.doctor.profilePhoto = uploadToCloudinary?.secure_url
+        req.body.doctor.profilePhoto = uploadToCloudinary?.secure_url;
     }
-    const hashedPassword: string = await bcrypt.hash(req.body.password, 10)
+
+    const hashedPassword: string = await bcrypt.hash(
+        req.body.password,
+        Number(config.salt_round)
+    );
 
     const userData = {
         email: req.body.doctor.email,
         password: hashedPassword,
-        role: UserRole.DOCTOR
-    }
+        role: UserRole.DOCTOR,
+    };
+
+    // Extract specialties from doctor data
+    const { specialties, ...doctorData } = req.body.doctor;
 
     const result = await prisma.$transaction(async (transactionClient) => {
+        // Step 1: Create user
         await transactionClient.user.create({
-            data: userData
+            data: userData,
         });
 
+        // Step 2: Create doctor
         const createdDoctorData = await transactionClient.doctor.create({
-            data: req.body.doctor
+            data: doctorData,
         });
 
-        return createdDoctorData;
+        // Step 3: Create doctor specialties if provided
+        if (specialties && Array.isArray(specialties) && specialties.length > 0) {
+            // Verify all specialties exist
+            const existingSpecialties = await transactionClient.specialties.findMany({
+                where: {
+                    id: {
+                        in: specialties,
+                    },
+                },
+                select: {
+                    id: true,
+                },
+            });
+
+            const existingSpecialtyIds = existingSpecialties.map((s) => s.id);
+            const invalidSpecialties = specialties.filter(
+                (id) => !existingSpecialtyIds.includes(id)
+            );
+
+            if (invalidSpecialties.length > 0) {
+                throw new Error(
+                    `Invalid specialty IDs: ${invalidSpecialties.join(", ")}`
+                );
+            }
+
+            // Create doctor specialties relations
+            const doctorSpecialtiesData = specialties.map((specialtyId) => ({
+                doctorId: createdDoctorData.id,
+                specialitiesId: specialtyId,
+            }));
+
+            await transactionClient.doctorSpecialties.createMany({
+                data: doctorSpecialtiesData,
+            });
+        }
+
+        // Step 4: Return doctor with specialties
+        const doctorWithSpecialties = await transactionClient.doctor.findUnique({
+            where: {
+                id: createdDoctorData.id,
+            },
+            include: {
+                doctorSpecialties: {
+                    include: {
+                        specialities: true,
+                    },
+                },
+            },
+        });
+
+        return doctorWithSpecialties!;
     });
 
     return result;
