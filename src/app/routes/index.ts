@@ -12,9 +12,11 @@ import { ReviewRoutes } from '../modules/review/review.routes';
 import { PatientRoutes } from '../modules/patient/patient.routes';
 import { AdminRoutes } from '../modules/admin/admin.routes';
 import { MetaRoutes } from '../modules/meta/meta.routes';
+import { apiLimiter } from '../middlewares/rateLimiter';
 
 
 const router = express.Router();
+router.use(apiLimiter);
 
 const moduleRoutes = [
     {

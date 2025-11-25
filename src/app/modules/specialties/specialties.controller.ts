@@ -3,6 +3,7 @@ import httpStatus from "http-status";
 import { SpecialtiesService } from "./specialties.service";
 import catchAsync from "../../shared/catchAsync";
 import sendResponse from "../../shared/sendResponse";
+import pick from "../../helper/pick";
 
 const inserIntoDB = catchAsync(async (req: Request, res: Response) => {
     const result = await SpecialtiesService.inserIntoDB(req);
@@ -15,14 +16,27 @@ const inserIntoDB = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
+//     const result = await SpecialtiesService.getAllFromDB();
+//     sendResponse(res, {
+//         statusCode: httpStatus.OK,
+//         success: true,
+//         message: 'Specialties data fetched successfully',
+//         data: result,
+//     });
+// });
+
+
 const getAllFromDB = catchAsync(async (req: Request, res: Response) => {
-    const result = await SpecialtiesService.getAllFromDB();
-    sendResponse(res, {
-        statusCode: httpStatus.OK,
-        success: true,
-        message: 'Specialties data fetched successfully',
-        data: result,
-    });
+  const options = pick(req.query, ["limit", "page", "sortBy", "sortOrder"]);
+  const result = await SpecialtiesService.getAllFromDB(options);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Specialties data fetched successfully",
+    meta: result.meta,
+    data: result.data,
+  });
 });
 
 const deleteFromDB = catchAsync(async (req: Request, res: Response) => {
