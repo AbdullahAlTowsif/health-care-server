@@ -1,59 +1,35 @@
-import { NextFunction, Request, Response } from "express";
+// src/app/middlewares/sanitizeInput.ts
+import { Request, Response, NextFunction } from 'express';
 
-/**
- * Middleware to trim string inputs and remove potentially harmful characters
- */
-export const sanitizeInput = (
-    req: Request,
-    res: Response,
-    next: NextFunction
-) => {
-    // Sanitize body
-    if (req.body) {
-        req.body = sanitizeObject(req.body);
-    }
-
-    // Sanitize query
+const sanitizeInput = (req: Request, res: Response, next: NextFunction) => {
+    // Sanitize query parameters
     if (req.query) {
-        req.query = sanitizeObject(req.query);
+        const sanitizedQuery: any = {};
+        for (const [key, value] of Object.entries(req.query)) {
+            if (typeof value === 'string') {
+                sanitizedQuery[key] = value.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            } else {
+                sanitizedQuery[key] = value;
+            }
+        }
+        // Assign to a custom property instead of modifying req.query directly
+        (req as any).sanitizedQuery = sanitizedQuery;
     }
 
-    // Sanitize params
-    if (req.params) {
-        req.params = sanitizeObject(req.params);
+    // Sanitize body parameters
+    if (req.body) {
+        const sanitizedBody: any = {};
+        for (const [key, value] of Object.entries(req.body)) {
+            if (typeof value === 'string') {
+                sanitizedBody[key] = value.trim().replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '');
+            } else {
+                sanitizedBody[key] = value;
+            }
+        }
+        req.body = sanitizedBody;
     }
 
     next();
 };
 
-const sanitizeObject = (obj: any): any => {
-    if (typeof obj !== "object" || obj === null) {
-        return sanitizeValue(obj);
-    }
-
-    if (Array.isArray(obj)) {
-        return obj.map(sanitizeObject);
-    }
-
-    const sanitized: any = {};
-    for (const key in obj) {
-        if (obj.hasOwnProperty(key)) {
-            sanitized[key] = sanitizeObject(obj[key]);
-        }
-    }
-    return sanitized;
-};
-
-const sanitizeValue = (value: any): any => {
-    if (typeof value === "string") {
-        // Trim whitespace
-        value = value.trim();
-
-        // Remove null bytes
-        value = value.replace(/\0/g, "");
-
-        // HTML encode dangerous characters (optional - depends on use case)
-        // value = value.replace(/[<>]/g, '');
-    }
-    return value;
-};
+export default sanitizeInput;

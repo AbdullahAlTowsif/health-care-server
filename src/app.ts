@@ -8,7 +8,8 @@ import cookieParser from "cookie-parser"
 import { PaymentController } from './app/modules/payment/payment.controller';
 import cron from 'node-cron';
 import { AppointmentService } from './app/modules/appointment/appointment.service';
-import { sanitizeInput } from './app/middlewares/sanitizeInput';
+import sanitizeInput from './app/middlewares/sanitizeInput';
+// import { sanitizeInput } from './app/middlewares/sanitizeInput';
 
 const app: Application = express();
 
