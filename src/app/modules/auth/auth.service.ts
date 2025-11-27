@@ -1,37 +1,51 @@
-import { UserStatus } from "@prisma/client"
-import { prisma } from "../../shared/prisma"
-import bcrypt from "bcryptjs"
-import { jwtHelper } from "../../helper/jwtHelper"
-import ApiError from "../../errors/ApiError"
+import { UserStatus } from "@prisma/client";
+import * as bcrypt from 'bcryptjs';
 import httpStatus from "http-status";
-import config from "../../../config"
-import { Secret } from "jsonwebtoken"
-import emailSender from "./emailSender"
+import { Secret } from "jsonwebtoken";
+import config from "../../../config";
+import ApiError from "../../errors/ApiError";
+import emailSender from "./emailSender";
+import { prisma } from "../../shared/prisma";
+import { jwtHelper } from "../../helper/jwtHelper";
 
-const login = async (payload: { email: string, password: string }) => {
-    const user = await prisma.user.findUniqueOrThrow({
+const loginUser = async (payload: {
+    email: string,
+    password: string
+}) => {
+    const userData = await prisma.user.findUniqueOrThrow({
         where: {
             email: payload.email,
             status: UserStatus.ACTIVE
         }
-    })
+    });
 
-    const isCorrectPassword = await bcrypt.compare(payload.password, user.password);
+    const isCorrectPassword: boolean = await bcrypt.compare(payload.password, userData.password);
+
     if (!isCorrectPassword) {
-        throw new ApiError(httpStatus.BAD_REQUEST, "Password is incorrect!")
+        throw new Error("Password incorrect!")
     }
+    const accessToken = jwtHelper.generateToken({
+        email: userData.email,
+        role: userData.role
+    },
+        config.jwt.jwt_secret as Secret,
+        config.jwt.expires_in as string
+    );
 
-    const accessToken = jwtHelper.generateToken({ email: user.email, role: user.role }, config.jwt.jwt_secret as Secret, config.jwt.expires_in as string);
-
-    const refreshToken = jwtHelper.generateToken({ email: user.email, role: user.role }, config.jwt.refresh_token_secret as Secret, config.jwt.refresh_token_expires_in as string);
+    const refreshToken = jwtHelper.generateToken({
+        email: userData.email,
+        role: userData.role
+    },
+        config.jwt.refresh_token_secret as Secret,
+        config.jwt.refresh_token_expires_in as string
+    );
 
     return {
         accessToken,
         refreshToken,
-        needPasswordChange: user.needPasswordChange
-    }
-}
-
+        needPasswordChange: userData.needPasswordChange
+    };
+};
 
 const refreshToken = async (token: string) => {
     let decodedData;
@@ -57,13 +71,21 @@ const refreshToken = async (token: string) => {
         config.jwt.expires_in as string
     );
 
+    const refreshToken = jwtHelper.generateToken({
+        email: userData.email,
+        role: userData.role
+    },
+        config.jwt.refresh_token_secret as Secret,
+        config.jwt.refresh_token_expires_in as string
+    );
+
     return {
         accessToken,
+        refreshToken,
         needPasswordChange: userData.needPasswordChange
     };
 
 };
-
 
 const changePassword = async (user: any, payload: any) => {
     const userData = await prisma.user.findUniqueOrThrow({
@@ -139,7 +161,7 @@ const resetPassword = async (token: string, payload: { id: string, password: str
         }
     });
 
-    const isValidToken = jwtHelper.verifyToken(token, config.jwt.reset_pass_secret as Secret)
+    const isValidToken = jwtHelper.verifyToken(token, config.jwt.jwt_secret as Secret)
 
     if (!isValidToken) {
         throw new ApiError(httpStatus.FORBIDDEN, "Forbidden!")
@@ -154,34 +176,11 @@ const resetPassword = async (token: string, payload: { id: string, password: str
             id: payload.id
         },
         data: {
-            password
+            password,
+            needPasswordChange: false
         }
     })
 };
-
-// const getMe = async (session: any) => {
-//     const accessToken = session.accessToken;
-//     const decodedData = jwtHelper.verifyToken(accessToken, config.jwt.jwt_secret as Secret);
-
-//     const userData = await prisma.user.findUniqueOrThrow({
-//         where: {
-//             email: decodedData.email,
-//             status: UserStatus.ACTIVE
-//         }
-//     })
-
-//     const { id, email, role, needPasswordChange, status } = userData;
-
-//     return {
-//         id,
-//         email,
-//         role,
-//         needPasswordChange,
-//         status
-//     }
-
-// }
-
 
 const getMe = async (user: any) => {
     const accessToken = user.accessToken;
@@ -258,8 +257,9 @@ const getMe = async (user: any) => {
     return userData;
 }
 
-export const AuthService = {
-    login,
+
+export const AuthServices = {
+    loginUser,
     refreshToken,
     changePassword,
     forgotPassword,
