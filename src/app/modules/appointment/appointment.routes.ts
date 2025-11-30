@@ -26,7 +26,7 @@ router.post(
 router.patch(
     "/status/:id",
     auth(UserRole.ADMIN, UserRole.DOCTOR),
-    AppointmentController.updateAppointmentStatus
+    AppointmentController.changeAppointmentStatus
 )
 
 export const AppointmentRoutes = router;
