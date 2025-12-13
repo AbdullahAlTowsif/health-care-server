@@ -55,7 +55,7 @@ const changeAppointmentStatus = catchAsync(async (req: Request & { user?: IJWTPa
     const { status } = req.body;
     const user = req.user;
 
-    const result = await AppointmentService.changeAppointmentStatus(id, status, user as IJWTPayload);
+    const result = await AppointmentService.updateAppointmentStatus(id, status, user as IJWTPayload);
     sendResponse(res, {
         statusCode: httpStatus.OK,
         success: true,
@@ -64,9 +64,38 @@ const changeAppointmentStatus = catchAsync(async (req: Request & { user?: IJWTPa
     });
 });
 
+const createAppointmentWithPayLater = catchAsync(async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+
+    const result = await AppointmentService.createAppointmentWithPayLater(user as IJWTPayload, req.body);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Appointment booked successfully! You can pay later.",
+        data: result
+    })
+});
+
+const initiatePayment = catchAsync(async (req: Request & { user?: IJWTPayload }, res: Response) => {
+    const user = req.user;
+    const { id } = req.params;
+
+    const result = await AppointmentService.initiatePaymentForAppointment(id, user as IJWTPayload);
+
+    sendResponse(res, {
+        statusCode: httpStatus.OK,
+        success: true,
+        message: "Payment session created successfully",
+        data: result
+    })
+});
+
 export const AppointmentController = {
     createAppointment,
     getMyAppointment,
     getAllFromDB,
-    changeAppointmentStatus
+    changeAppointmentStatus,
+    createAppointmentWithPayLater,
+    initiatePayment
 }

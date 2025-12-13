@@ -1,9 +1,9 @@
 import { Prisma } from "@prisma/client";
 import ApiError from "../../errors/ApiError";
 import { IOptions, paginationHelper } from "../../helper/paginationHelper";
-import { prisma } from "../../shared/prisma"
 import { IJWTPayload } from "../../types/common";
 import httpStatus from "http-status";
+import prisma from "../../shared/prisma";
 
 const insertIntoDB = async (user: IJWTPayload, payload: {scheduleIds: string[]}) => {
     const doctorData = await prisma.doctor.findUniqueOrThrow({

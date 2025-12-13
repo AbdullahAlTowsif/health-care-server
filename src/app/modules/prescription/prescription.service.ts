@@ -3,7 +3,7 @@ import httpStatus from "http-status";
 import ApiError from "../../errors/ApiError";
 import { IPaginationOptions } from "../../interfaces/pagination";
 import { IJWTPayload } from "../../types/common";
-import { prisma } from "../../shared/prisma";
+import prisma  from "../../shared/prisma";
 import { paginationHelper } from "../../helper/paginationHelper";
 
 const insertIntoDB = async (user: IJWTPayload, payload: Partial<Prescription>) => {

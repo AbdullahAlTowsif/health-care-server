@@ -3,8 +3,8 @@ import { IPaginationOptions } from "../../interfaces/pagination";
 import { IDoctorFilterRequest, IDoctorUpdate } from "./doctor.interface";
 import { paginationHelper } from "../../helper/paginationHelper";
 import { doctorSearchableFields } from "./doctor.constant";
-import { prisma } from "../../shared/prisma";
 import { askOpenRouter } from "../../helper/openRouterClient";
+import prisma from "../../shared/prisma";
 
 const getAllFromDB = async (
     filters: IDoctorFilterRequest,

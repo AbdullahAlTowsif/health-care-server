@@ -2,7 +2,7 @@ import { PaymentStatus, UserRole } from "@prisma/client";
 import { IJWTPayload } from "../../types/common";
 import httpStatus from 'http-status'
 import ApiError from "../../errors/ApiError";
-import { prisma } from "../../shared/prisma";
+import prisma from "../../shared/prisma";
 
 
 const fetchDashboardMetaData = async (user: IJWTPayload) => {
