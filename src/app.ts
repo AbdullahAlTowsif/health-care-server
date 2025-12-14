@@ -21,7 +21,7 @@ app.post(
 
 
 app.use(cors({
-    origin: 'http://localhost:3000',
+    origin: ['http://localhost:3000', 'https://health-care-client-lake.vercel.app'],
     credentials: true
 }));
 
