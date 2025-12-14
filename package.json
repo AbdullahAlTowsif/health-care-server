@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only ./src/server.ts",
+    "build": "tsc",
     "stripe:webhook": "stripe listen --forward-to localhost:5000/webhook"
   },
   "dependencies": {
