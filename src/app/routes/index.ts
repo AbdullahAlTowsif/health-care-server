@@ -63,7 +63,7 @@ const moduleRoutes = [
         route: PatientRoutes
     },
     {
-        path: '/metadata',
+        path: '/meta',
         route: MetaRoutes
     }
 ];
