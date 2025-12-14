@@ -200,6 +200,7 @@ const resetPassword = catchAsync(async (req: Request & { user?: any }, res: Resp
     const authHeader = req.headers.authorization;
     console.log({ authHeader });
     const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+    console.log("token", token);
     const user = req.user; // Will be populated if authenticated via middleware
 
     await AuthServices.resetPassword(token, req.body, user);
