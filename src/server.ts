@@ -1,6 +1,7 @@
 import { Server } from 'http';
 import app from './app';
 import config from './config';
+import { seedAdmin } from './app/shared/seedAdmin';
 
 
 async function bootstrap() {
@@ -43,4 +44,7 @@ async function bootstrap() {
     }
 }
 
-bootstrap();
+(async () => {
+    await bootstrap();
+    await seedAdmin();
+})();
