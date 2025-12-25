@@ -2,9 +2,9 @@ import { Prisma, Schedule } from '@prisma/client';
 import { addHours, addMinutes, format } from 'date-fns';
 import { IPaginationOptions } from '../../interfaces/pagination';
 import { IFilterRequest, ISchedule } from './schedule.interface';
+import prisma from '../../shared/prisma';
 import { IJWTPayload } from '../../types/common';
 import { paginationHelper } from '../../helper/paginationHelper';
-import prisma from '../../shared/prisma';
 
 const convertDateTime = async (date: Date) => {
     const offset = date.getTimezoneOffset() * 60000;
