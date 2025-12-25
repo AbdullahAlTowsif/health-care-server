@@ -11,52 +11,70 @@ const convertDateTime = async (date: Date) => {
     return new Date(date.getTime() + offset);
 }
 
-const inserIntoDB = async (payload: ISchedule): Promise<Schedule[]> => {
+const insertIntoDB = async (payload: ISchedule): Promise<Schedule[]> => {
     const { startDate, endDate, startTime, endTime } = payload;
 
-    const intervalTime = 30;
+    // Validate date order
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    
+    if (start > end) {
+        throw new Error('End date must be after or equal to start date');
+    }
 
+    // Validate time order
+    const startTimeHour = Number(startTime.split(':')[0]);
+    const startTimeMinute = Number(startTime.split(':')[1]);
+    const endTimeHour = Number(endTime.split(':')[0]);
+    const endTimeMinute = Number(endTime.split(':')[1]);
+    
+    if (startTimeHour > endTimeHour || 
+        (startTimeHour === endTimeHour && startTimeMinute >= endTimeMinute)) {
+        throw new Error('End time must be after start time');
+    }
+
+    const intervalTime = 30;
     const schedules = [];
 
     const currentDate = new Date(startDate); // start date
-    const lastDate = new Date(endDate) // end date
+    const lastDate = new Date(endDate); // end date
 
     while (currentDate <= lastDate) {
-        // 09:30  ---> ['09', '30']
+        // Parse start time
         const startDateTime = new Date(
             addMinutes(
                 addHours(
                     `${format(currentDate, 'yyyy-MM-dd')}`,
-                    Number(startTime.split(':')[0])
+                    startTimeHour
                 ),
-                Number(startTime.split(':')[1])
+                startTimeMinute
             )
         );
 
+        // Parse end time
         const endDateTime = new Date(
             addMinutes(
                 addHours(
                     `${format(currentDate, 'yyyy-MM-dd')}`,
-                    Number(endTime.split(':')[0])
+                    endTimeHour
                 ),
-                Number(endTime.split(':')[1])
+                endTimeMinute
             )
         );
 
-        while (startDateTime < endDateTime) {
-            // const scheduleData = {
-            //     startDateTime: startDateTime,
-            //     endDateTime: addMinutes(startDateTime, intervalTime)
-            // }
-
-            const s = await convertDateTime(startDateTime);
-            const e = await convertDateTime(addMinutes(startDateTime, intervalTime))
+        // Generate intervals
+        const tempStartDateTime = new Date(startDateTime); // Create a copy to avoid modifying the original
+        
+        while (tempStartDateTime < endDateTime) {
+            const s = await convertDateTime(tempStartDateTime);
+            const e = await convertDateTime(addMinutes(new Date(tempStartDateTime), intervalTime));
 
             const scheduleData = {
                 startDateTime: s,
                 endDateTime: e
-            }
+            };
 
+            // Check if schedule already exists
             const existingSchedule = await prisma.schedule.findFirst({
                 where: {
                     startDateTime: scheduleData.startDateTime,
@@ -71,7 +89,7 @@ const inserIntoDB = async (payload: ISchedule): Promise<Schedule[]> => {
                 schedules.push(result);
             }
 
-            startDateTime.setMinutes(startDateTime.getMinutes() + intervalTime);
+            tempStartDateTime.setMinutes(tempStartDateTime.getMinutes() + intervalTime);
         }
 
         currentDate.setDate(currentDate.getDate() + 1);
@@ -216,7 +234,7 @@ const deleteFromDB = async (id: string): Promise<Schedule> => {
 
 
 export const ScheduleService = {
-    inserIntoDB,
+    insertIntoDB,
     getAllFromDB,
     getByIdFromDB,
     deleteFromDB

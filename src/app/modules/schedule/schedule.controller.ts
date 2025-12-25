@@ -7,7 +7,7 @@ import { IJWTPayload } from "../../types/common";
 import pick from "../../helper/pick";
 
 const insertIntoDB = catchAsync(async (req: Request, res: Response) => {
-    const result = await ScheduleService.inserIntoDB(req.body);
+    const result = await ScheduleService.insertIntoDB(req.body);
 
     sendResponse(res, {
         statusCode: httpStatus.OK,
